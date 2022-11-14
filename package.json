@@ -1,0 +1,11 @@
+{
+  "name": "easy-rbac-plus",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": "git@github.com:embrio-tech/easy-rbac-plus.git",
+  "author": "Timon Heinis <timon@embrio.tech>",
+  "license": "MIT"
+}
