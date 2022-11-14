@@ -1,6 +1,6 @@
 # easy-rbac-plus
 
-Advanced RBAC implementation for Node.js based on [easy-rbac](https://github.com/DeadAlready/easy-rbac) by [DeadAlready](https://github.com/DeadAlready)
+Advanced HRBAC (Hierarchical Role Based Access Control) implementation for Node.js based on [easy-rbac](https://github.com/DeadAlready/easy-rbac) by [DeadAlready](https://github.com/DeadAlready)
 
 ## Why easy-rbac-plus?
 
