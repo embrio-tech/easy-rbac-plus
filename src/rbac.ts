@@ -17,15 +17,17 @@ export default class RBAC<Params extends Record<string, any> = Record<string, an
   roles: Map<Role, RoleMapItem<Params, Role>>
   private inited: boolean
   private init: Promise<void>
+  private options: Options<Params>
 
   /**
    * new `RBAC` instance
    *
-   * @prop {Options} roles - roles config object containing permissions
+   * @prop {RolesOptions} roles - roles config object containing permissions
    */
-  constructor(roles: Options<Params, Role>) {
+  constructor(roles: RolesOptions<Params, Role>, options: Options<Params> = {}) {
     this.inited = false
     this.roles = new Map<Role, RoleMapItem<Params, Role>>()
+    this.options = options
 
     if (typeof roles !== 'function' && typeof (roles as any).then !== 'function') {
       // roles is no function nor promise --> sync init
@@ -94,9 +96,11 @@ export default class RBAC<Params extends Record<string, any> = Record<string, an
     // if one, await can and filter promises
     if (operationCan) {
       const whenPromise = typeof operationCan.when === 'function' ? operationCan.when(params) : Promise.resolve(true)
+      const globalWhenPromise = typeof this.options.globalWhen === 'function' ? this.options.globalWhen(params) : Promise.resolve(true)
       const filterPromise = typeof operationCan.filter === 'function' ? operationCan.filter(params) : Promise.resolve(undefined)
-      const [permission, filter] = await Promise.all([whenPromise, filterPromise])
-      return { permission, filter }
+      const globalFilterPromise = typeof this.options.globalFilter === 'function' ? this.options.globalFilter(params) : Promise.resolve(undefined)
+      const [permission, globalPermission, filter, globalFilter] = await Promise.all([whenPromise, globalWhenPromise, filterPromise, globalFilterPromise])
+      return { permission: permission && globalPermission, filter: globalFilter || filter ? { ...globalFilter, ...filter } : undefined }
     }
 
     // should never reached here
@@ -147,9 +151,11 @@ export default class RBAC<Params extends Record<string, any> = Record<string, an
         }
 
         // if conditional permission with filter
-        if (typeof permission === 'object' && (typeof permission.when === 'function' || typeof permission.filter === 'function')) {
+        if (typeof permission === 'object') {
           const { name, filter, when } = permission
-          if (!name) throw new TypeError('name is missing on permission object')
+          if (!name || typeof name !== 'string') throw new TypeError('name is missing on permission object')
+          if (when && typeof when !== 'function') TypeError('when type is not a function')
+          if (filter && typeof filter !== 'function') TypeError('filter type is not a function')
           if (hasWildcard(name)) {
             roleMapItem.canWildcards.push({ wildcard: wildcardRegex(name), filter, when, name })
           } else {
@@ -193,7 +199,7 @@ export interface ConditionEvaluator<Params extends Record<string, any>> {
 }
 
 export interface QueryFilterGenerator<Params extends Record<string, any>> {
-  (params: Params & OperationParams): Promise<Filter>
+  (params: Params & OperationParams): Promise<Filter | undefined>
 }
 
 export interface PermissionObject<Params extends Record<string, any>> {
@@ -209,7 +215,7 @@ export type Roles<Params extends Record<string, any>, Role extends string> = {
   }
 }
 
-export type Options<Params extends Record<string, any>, Role extends string> =
+export type RolesOptions<Params extends Record<string, any>, Role extends string> =
   | Roles<Params, Role>
   | (() => Promise<Roles<Params, Role>>)
   | Promise<Roles<Params, Role>>
@@ -218,4 +224,11 @@ interface RoleMapItem<Params extends Record<string, any>, Role extends string> {
   can: { [operation: string]: Omit<PermissionObject<Params>, 'name'> }
   canWildcards: ({ wildcard: RegExp } & PermissionObject<Params>)[]
   inherits?: Role[]
+}
+
+interface Options<Params extends Record<string, any>> {
+  /** set `globalWhen` which is always executed and must return true to grant permisison */
+  globalWhen?: ConditionEvaluator<Params>
+  /** set `globalFilter`-generator which is always executed and merged with the filter of a permission */
+  globalFilter?: QueryFilterGenerator<Params>
 }
