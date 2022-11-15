@@ -14,4 +14,4 @@ Open Tasks
 - [ ] Setup and write tests
 - [ ] Setup typescript compiler and build script
 - [ ] Write Docs and Instructions
-- [ ] Publish to NPM
+- [ ] Publish to NPM (follow these [instructions](https://itnext.io/step-by-step-building-and-publishing-an-npm-typescript-package-44fe7164964c))
