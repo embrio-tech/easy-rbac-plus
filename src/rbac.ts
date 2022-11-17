@@ -13,7 +13,7 @@ function wildcardRegex(string: string): RegExp {
  * modified version easy-rbac by https://github.com/DeadAlready/easy-rbac
  * to achieve role-based filters for db queries
  */
-export default class RBAC<Params extends Record<string, any> = Record<string, any>, Role extends string = string> {
+export class RBAC<Params extends Record<string, any> = Record<string, any>, Role extends string = string> {
   roles: Map<Role, RoleMapItem<Params, Role>>
   private inited: boolean
   private init: Promise<void>
