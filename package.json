@@ -1,6 +1,6 @@
 {
   "name": "@embrio-tech/easy-rbac-plus",
-  "version": "0.0.0",
+  "version": "0.0.2",
   "main": "lib/index.js",
   "scripts": {
     "build": "tsc -p .",
