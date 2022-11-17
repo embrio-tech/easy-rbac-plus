@@ -7,7 +7,7 @@ Extended HRBAC (Hierarchical Role Based Access Control) implementation for Node.
 
 ## :gem: Why `easy-rbac-plus`?
 
-When doing access control for requests on multiple documents–for example GET `/books`—you want to set query filters automatically based on a user's role. [easy-rbac-plus](https://github.com/embrio-tech/easy-rbac-plus) implements this while maintaining the functionality of [easy-rbac](https://github.com/DeadAlready/easy-rbac).
+When doing access control for requests on multiple documents–—for example GET `/articles`——you want to set query filters automatically based on a user's role. [easy-rbac-plus](https://github.com/embrio-tech/easy-rbac-plus) implements this while maintaining the functionality of [easy-rbac](https://github.com/DeadAlready/easy-rbac).
 
 ### Additional Features
 
@@ -34,8 +34,6 @@ or npm command
     npm install --save @embrio-tech/easy-rbac-plus
 
 ## :orange_book: Usage
-
-Documentation is Work in progress :construction:
 
 ### Basic Usage
 
@@ -72,11 +70,24 @@ const roles: Roles<AppParams, AppRole> = {
 
 // create rbac instance with constructor
 const rbac = new RBAC(roles)
-// OR use create function
-const rbac = RBAC.create(roles)
+// OR use create function for async roles config generation
+const rbac = RBAC.create(async () => roles)
 
-// async check permissions and get filter
-const { permission, filter } = await rbac.can('reader', 'article:update', { ownerId: 'b003', userId: 'u245' })
+// use rbac.can() to async check permissions and get filter
+async function doSomething() {
+  const { permission, filter } = await rbac.can('reader', 'article:read', { ownerId: 'b003', userId: 'u245' })
+  if (permission) {
+    // we are allowed
+    const articles = await articleService.getMultiple({ filter })
+  } else {
+    // we are not allowed
+  }
+}
+
+// always make sure
+doSomething().catch((error) => {
+  // to handle errors
+})
 ```
 
 ### Permissions Configuration
@@ -156,7 +167,9 @@ Global `when` and `filter` conditions can be defined at initialization.
 
 ```typescript
 // a user allocated to a tenant can only read documents of this tenant or document without tenant allocation
-const globalWhen = async ({ userTenantId, documentTenantId }) => userTenantId === documentTenantId || !documentTenantId || !userTenantId
+const globalWhen = async ({ userTenantId, documentTenantId }) => {
+  return userTenantId === documentTenantId || !documentTenantId || !userTenantId
+}
 
 // set query filter to query only documents with the user's tenantId or no tenant id
 const globalFilter = async ({ userTenantId, documentTenantId }) => {
@@ -170,7 +183,7 @@ const rbac = new RBAC(roles, { globalWhen, globalFilter })
 
 If `when` or `filter` functions are set for a single operation (locally) **and** globally the following applies:
 
-- both `when` conditions must return `true`, the local and the global one.
+- both `when` conditions must return `true`, the local and the global one in order to grant permission.
 - the filter objects are merged together. When both filter objects have equal properties, then the local filter object overwrites the global one.
 
 ### Check Permissions
@@ -183,25 +196,6 @@ or the user is not allowed to access.
 ```typescript
 async function doSomething() {
   const { permission } = await rbac.can('user', 'article:create')
-  if (permission) {
-    // we are allowed
-  } else {
-    // we are not allowed
-  }
-}
-
-// always make sure
-doSomething().catch((error) => {
-  // to handle errors
-})
-```
-
-The function accepts parameters as the third parameter, it will be used if there is a `when` or/and `filter` operation in the validation
-hierarchy.
-
-```typescript
-async function doSomething() {
-  const { permission } = await rbac.can('user', 'article:update', { userId: 1, ownerId: 2 })
   if (permission) {
     // we are allowed
   } else {
@@ -234,6 +228,25 @@ doSomething().catch((error) => {
 })
 ```
 
+The function accepts context parameters as the third parameter, it will be used if there is a `when` or/and `filter` operation in the validation
+hierarchy.
+
+```typescript
+async function doSomething() {
+  const { permission } = await rbac.can('user', 'article:update', { userId: 1, ownerId: 2 })
+  if (permission) {
+    // we are allowed
+  } else {
+    // we are not allowed
+  }
+}
+
+// always make sure
+doSomething().catch((error) => {
+  // to handle errors
+})
+```
+
 You can also validate multiple roles at the same time, by providing an array of roles. Permission will be granted if one of the roles has a valid permission. The permission definition with no `filter` defined has priority over the one with filter in case of conflict.
 
 ```typescript
@@ -252,7 +265,7 @@ any checks.
 
 ```typescript
 async function doSomething() {
-  const rbac = RBAC.create(async () => opts)
+  const rbac = RBAC.create(async () => roles)
 
   // can() waits for the async initialization of rbac to be completed before resolving
   const { permission, filter } = await rbac.can(['reader', 'editor'], 'article:create')
@@ -270,20 +283,6 @@ Please report bugs by creating a [bug issue](https://github.com/embrio-tech/easy
 - [Node Version Manager](https://github.com/nvm-sh/nvm)
   - node: version specified in [`.nvmrc`](/.nvmrc)
 - [Yarn](https://classic.yarnpkg.com/en/)
-- Environment variables file
-
-  - Copy the template with
-
-        cp .env.sample .env
-
-- Tenant config file with `TENANT_ID`
-
-  - Copy the template with
-
-        cp public/tenant.json.sample public/tenant.json
-
-- [centrifuge-subql](https://github.com/embrio-tech/centrifuge-subql) backend.
-  - You can set the url of the backend in [`src/config/tenant/local.ts`](https://github.com/embrio-tech/centrifuge-insights/blob/main/src/config/environment/local.ts) as `graphQLServerUrl`.
 
 ### Install
 
@@ -303,8 +302,8 @@ This repository uses commitlint to enforce commit message conventions. You have 
 
 ## :speech_balloon: Contact
 
-[EMBRIO.tech](https://embrio.tech)
-[hello@embrio.tech](mailto:hello@embrio.tech)
+[EMBRIO.tech](https://embrio.tech)  
+[hello@embrio.tech](mailto:hello@embrio.tech)  
 +41 44 552 00 75
 
 ## :lock_with_ink_pen: License
