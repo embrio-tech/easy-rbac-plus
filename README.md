@@ -292,6 +292,8 @@ Please report bugs by creating a [bug issue](https://github.com/embrio-tech/easy
 
     yarn test
 
+:construction: Test are work in progress.
+
 ### Commit
 
 This repository uses commitlint to enforce commit message conventions. You have to specify the type of the commit in your commit message. Use one of the [supported types](https://github.com/pvdlg/conventional-changelog-metahub#commit-types).
