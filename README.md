@@ -298,8 +298,6 @@ This repository uses commitlint to enforce commit message conventions. You have 
 
     git commit -m "[type]: my perfect commit message"
 
-###
-
 ## :speech_balloon: Contact
 
 [EMBRIO.tech](https://embrio.tech)  
