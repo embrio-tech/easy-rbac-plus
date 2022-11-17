@@ -13,18 +13,18 @@ function wildcardRegex(string: string): RegExp {
  * modified version easy-rbac by https://github.com/DeadAlready/easy-rbac
  * to achieve role-based filters for db queries
  */
-export class RBAC<Params extends Record<string, any> = Record<string, any>, Role extends string = string> {
+export default class RBAC<Params extends Record<string, any> = Record<string, any>, Role extends string = string> {
   roles: Map<Role, RoleMapItem<Params, Role>>
   private inited: boolean
   private init: Promise<void>
-  private options: Options<Params, Role>
+  private options: Options<Params>
 
   /**
    * new `RBAC` instance
    *
    * @prop {RolesOptions} roles - roles config object containing permissions
    */
-  constructor(roles: RolesOptions<Params, Role>, options: Options<Params, Role> = {}) {
+  constructor(roles: RolesOptions<Params, Role>, options: Options<Params> = {}) {
     this.inited = false
     this.roles = new Map<Role, RoleMapItem<Params, Role>>()
     this.options = options
@@ -48,7 +48,7 @@ export class RBAC<Params extends Record<string, any> = Record<string, any>, Role
    *
    * @returns object with `{ can: boolean, filter?: Filter }`
    */
-  async can(role: Role | Role[], operation: string, params: Params & OperationParams<Role>): Promise<{ permission: boolean; filter?: Filter }> {
+  async can(role: Role | Role[], operation: string, params: Params): Promise<{ permission: boolean; filter?: Filter }> {
     // check if initialized
     if (!this.inited) {
       // not inited, wait for init
@@ -187,31 +187,25 @@ export class RBAC<Params extends Record<string, any> = Record<string, any>, Role
 
 // types & interfaces
 
-export interface OperationParams<Role extends string> {
-  operationName: string
-  operationTarget: string
-  userRole: Role
-}
-
 export type Filter = Record<string, any>
 
-export interface ConditionEvaluator<Params extends Record<string, any>, Role extends string> {
-  (params: Params & OperationParams<Role>): Promise<boolean>
+export interface ConditionEvaluator<Params extends Record<string, any>> {
+  (params: Params): Promise<boolean>
 }
 
-export interface QueryFilterGenerator<Params extends Record<string, any>, Role extends string> {
-  (params: Params & OperationParams<Role>): Promise<Filter | undefined>
+export interface QueryFilterGenerator<Params extends Record<string, any>> {
+  (params: Params): Promise<Filter | undefined>
 }
 
-export interface PermissionObject<Params extends Record<string, any>, Role extends string> {
+export interface PermissionObject<Params extends Record<string, any>> {
   name: string
-  when?: ConditionEvaluator<Params, Role>
-  filter?: QueryFilterGenerator<Params, Role>
+  when?: ConditionEvaluator<Params>
+  filter?: QueryFilterGenerator<Params>
 }
 
 export type Roles<Params extends Record<string, any>, Role extends string> = {
   [key in Role]: {
-    can: Array<string | PermissionObject<Params, Role>>
+    can: Array<string | PermissionObject<Params>>
     inherits?: Role[]
   }
 }
@@ -222,14 +216,14 @@ export type RolesOptions<Params extends Record<string, any>, Role extends string
   | Promise<Roles<Params, Role>>
 
 interface RoleMapItem<Params extends Record<string, any>, Role extends string> {
-  can: { [operation: string]: Omit<PermissionObject<Params, Role>, 'name'> }
-  canWildcards: ({ wildcard: RegExp } & PermissionObject<Params, Role>)[]
+  can: { [operation: string]: Omit<PermissionObject<Params>, 'name'> }
+  canWildcards: ({ wildcard: RegExp } & PermissionObject<Params>)[]
   inherits?: Role[]
 }
 
-interface Options<Params extends Record<string, any>, Role extends string> {
+interface Options<Params extends Record<string, any>> {
   /** set `globalWhen` which is always executed and must return true to grant permisison */
-  globalWhen?: ConditionEvaluator<Params, Role>
+  globalWhen?: ConditionEvaluator<Params>
   /** set `globalFilter`-generator which is always executed and merged with the filter of a permission */
-  globalFilter?: QueryFilterGenerator<Params, Role>
+  globalFilter?: QueryFilterGenerator<Params>
 }
