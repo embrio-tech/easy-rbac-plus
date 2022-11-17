@@ -10,9 +10,9 @@ When doing access control for requests on multiple documents–for example GET `
 
 Open Tasks
 
-- [ ] Add linter
+- [x] Add linter
 - [ ] Setup and write tests
-- [ ] Setup typescript compiler and build script
+- [x] Setup typescript compiler and build script
 - [ ] Write Docs and Instructions
 - [ ] Publish to NPM (follow these [instructions](https://itnext.io/step-by-step-building-and-publishing-an-npm-typescript-package-44fe7164964c))
 
