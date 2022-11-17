@@ -1,9 +1,9 @@
 # `@embrio-tech/easy-rbac-plus`
 
+Extended HRBAC (Hierarchical Role Based Access Control) implementation for Node.js inspired by and based on [easy-rbac](https://github.com/DeadAlready/easy-rbac) by [DeadAlready](https://github.com/DeadAlready)
+
 [![embrio.tech](https://img.shields.io/static/v1?label=by&message=EMBRIO.tech&color=24ae5f)](https://embrio.tech)
 [![Pipeline](https://github.com/embrio-tech/easy-rbac-plus/actions/workflows/test.yml/badge.svg)](https://github.com/embrio-tech/easy-rbac-plus/actions/workflows/test.yml)
-
-Extended HRBAC (Hierarchical Role Based Access Control) implementation for Node.js inspired by and based on [easy-rbac](https://github.com/DeadAlready/easy-rbac) by [DeadAlready](https://github.com/DeadAlready)
 
 ## :gem: Why `easy-rbac-plus`?
 
@@ -292,7 +292,7 @@ Please report bugs by creating a [bug issue](https://github.com/embrio-tech/easy
 
     yarn test
 
-:construction: Test are work in progress.
+:construction: Tests are work in progress.
 
 ### Commit
 
