@@ -39,6 +39,13 @@ export class RBAC<Params extends Record<string, any> = Record<string, any>, Role
     }
   }
 
+  /**
+   * static creator function
+   *
+   * @prop {RolesOptions} roles - roles config object containing permissions
+   *
+   * @returns new RBAC-instance
+   */
   static create<Params extends Record<string, any> = Record<string, any>, Role extends string = string>(
     roles: RolesOptions<Params, Role>,
     options: Options<Params> = {}
