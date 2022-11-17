@@ -39,6 +39,13 @@ export class RBAC<Params extends Record<string, any> = Record<string, any>, Role
     }
   }
 
+  static create<Params extends Record<string, any> = Record<string, any>, Role extends string = string>(
+    roles: RolesOptions<Params, Role>,
+    options: Options<Params> = {}
+  ) {
+    return new this(roles, options)
+  }
+
   /**
    * checks if `role` can do `operation` with given `params`
    *
