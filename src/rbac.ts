@@ -116,7 +116,7 @@ export default class RBAC<Params extends Record<string, any> = Record<string, an
     Object.keys(roles).forEach((role) => {
       const roleMapItem: RoleMapItem<Params, Role> = {
         can: {},
-        canWildcards: []
+        canWildcards: [],
       }
 
       const roleObject = roles[role as Role]
