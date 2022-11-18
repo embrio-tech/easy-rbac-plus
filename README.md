@@ -70,8 +70,6 @@ const roles: Roles<AppParams, AppRole> = {
 
 // create rbac instance with constructor
 const rbac = new RBAC(roles)
-// OR use create function for async roles config generation
-const rbac = RBAC.create(async () => roles)
 
 // use rbac.can() to async check permissions and get filter
 async function doSomething() {
@@ -135,6 +133,73 @@ const roles: Roles = {
   },
   // ... more roles
 }
+```
+
+#### Async Initialization
+
+In case you want to generate your `roles` config object asynchronously, you can use the static async create function. This is useful when you need to fetch your roles definitions or query them from a db. There are two options for async initialization.
+
+1. with a roles promise `Promise<Roles>`
+2. with an async factory function `() => Promise<Roles>`
+
+Example with roles promise `Promise<Roles>`:
+
+```typescript
+// with roles promise
+async function initialize() {
+  const rolesPromise = new Promise((resolve) => {
+    resolve(roles)
+  })
+  const rbac = await RBAC.create(rolesPromise)
+  return rbac
+}
+
+initialize().then((rbac) => {
+  // use the rbac instance
+}).catch((error) => {
+  // catch errors
+})
+```
+
+Example with async factory function `() => Promise<Roles>`:
+
+```typescript
+// with async factory function
+async function initialize() {
+  const rolesFactory = async () => {
+    const roles = {
+      // ... your roles
+    }
+    return roles
+  }
+  const rbac = await RBAC.create(rolesFactory)
+  return rbac
+}
+
+initialize().then((rbac) => {
+  // use the rbac instance
+}).catch((error) => {
+  // catch errors
+})
+```
+
+The static async create function also works with a sync roles config object.
+
+```typescript
+// with sync roles object
+async function initialize() {
+  const roles = {
+    // ... your roles
+  }
+  const rbac = await RBAC.create(roles)
+  return rbac
+}
+
+initialize().then((rbac) => {
+  // use the rbac instance
+}).catch((error) => {
+  // catch errors
+})
 ```
 
 #### Wildcards
@@ -260,12 +325,12 @@ async function doSomething() {
 }
 ```
 
-If the options of the initialization is async then it will wait for the initialization to resolve before resolving
+If the options of the initialization is async then you have to wait for the initialization to resolve before resolving
 any checks.
 
 ```typescript
 async function doSomething() {
-  const rbac = RBAC.create(async () => roles)
+  const rbac = await RBAC.create(async () => roles)
 
   // can() waits for the async initialization of rbac to be completed before resolving
   const { permission, filter } = await rbac.can(['reader', 'editor'], 'article:create')

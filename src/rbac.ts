@@ -13,44 +13,38 @@ function wildcardRegex(string: string): RegExp {
  * modified version easy-rbac by https://github.com/DeadAlready/easy-rbac
  * to achieve role-based filters for db queries
  */
-export class RBAC<Params extends Record<string, any> = Record<string, any>, Role extends string = string> {
-  roles: Map<Role, RoleMapItem<Params, Role>>
-  private inited: boolean
-  private init: Promise<void>
+export class RBAC<Params extends Record<string, any>, Role extends string> {
+  private roles: Map<Role, RoleMapItem<Params, Role>>
+
   private options: Options<Params>
 
   /**
-   * new `RBAC` instance
+   * new `RBAC` instance from a roles config object
    *
-   * @prop {RolesOptions} roles - roles config object containing permissions
+   * @prop {Roles}      roles - roles config object containing permissions
+   * @prop {Options}    options - optional addiontal options
    */
-  constructor(roles: RolesOptions<Params, Role>, options: Options<Params> = {}) {
-    this.inited = false
+  constructor(roles: Roles<Params, Role>, options: Options<Params> = {}) {
     this.roles = new Map<Role, RoleMapItem<Params, Role>>()
     this.options = options
-
-    if (typeof roles !== 'function' && typeof (roles as any).then !== 'function') {
-      // roles is no function nor promise --> sync init
-      this.buildRoleMap(roles as Roles<Params, Role>)
-      this.init = Promise.resolve()
-    } else {
-      // execute roles
-      this.init = this.asyncInit(roles)
-    }
+    this.buildRoleMap(roles)
   }
 
   /**
-   * static creator function
+   * static async creator function supporting async roles config generation
    *
-   * @prop {RolesOptions} roles - roles config object containing permissions
+   * @prop {RolesOptions} roles - roles config either as object, promise or factory function
+   * @prop {Options}    options - optional addiontal options
    *
    * @returns new RBAC-instance
    */
-  static create<Params extends Record<string, any> = Record<string, any>, Role extends string = string>(
-    roles: RolesOptions<Params, Role>,
-    options: Options<Params> = {}
-  ) {
-    return new this(roles, options)
+  static async create<Params extends Record<string, any>, Role extends string>(roles: RolesOptions<Params, Role>, options: Options<Params> = {}) {
+    if (typeof roles === 'function') {
+      // roles is an async factory function
+      return new this(await roles(), options)
+    }
+    // roles is a static object or a promise
+    return new this(await roles, options)
   }
 
   /**
@@ -63,12 +57,6 @@ export class RBAC<Params extends Record<string, any> = Record<string, any>, Role
    * @returns object with `{ can: boolean, filter?: Filter }`
    */
   async can(role: Role | Role[], operation: string, params: Params): Promise<{ permission: boolean; filter?: Filter }> {
-    // check if initialized
-    if (!this.inited) {
-      // not inited, wait for init
-      await this.init
-    }
-
     if (Array.isArray(role)) {
       // multiple roles provided, test all
       const permissions = await Promise.all(role.map((role) => this.can(role, operation, params)))
@@ -184,8 +172,6 @@ export class RBAC<Params extends Record<string, any> = Record<string, any>, Role
 
       this.roles.set(role as Role, roleMapItem)
     })
-
-    this.inited = true
   }
 
   private async asyncInit(roles: any) {
@@ -217,7 +203,7 @@ export interface PermissionObject<Params extends Record<string, any>> {
   filter?: QueryFilterGenerator<Params>
 }
 
-export type Roles<Params extends Record<string, any>, Role extends string> = {
+export type Roles<Params extends Record<string, any> = Record<string, any>, Role extends string = string> = {
   [key in Role]: {
     can: Array<string | PermissionObject<Params>>
     inherits?: Role[]
