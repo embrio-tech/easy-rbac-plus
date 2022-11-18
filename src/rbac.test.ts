@@ -44,15 +44,15 @@ describe('RBAC should initialize', () => {
     expect(new RBAC(roles)).toBeInstanceOf(RBAC)
   })
 
-  test('with static create function.', async () => {
+  test('with async create function.', async () => {
     expect(await RBAC.create(roles)).toBeInstanceOf(RBAC)
   })
 
-  test('with static create function.', async () => {
+  test('with async create function and roles promise.', async () => {
     expect(await RBAC.create(rolesPromise)).toBeInstanceOf(RBAC)
   })
 
-  test('with static create function.', async () => {
+  test('with async create function and roles factory function.', async () => {
     expect(await RBAC.create(rolesFactory)).toBeInstanceOf(RBAC)
   })
 })
