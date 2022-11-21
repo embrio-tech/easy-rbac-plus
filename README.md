@@ -357,7 +357,9 @@ Please report bugs by creating a [bug issue](https://github.com/embrio-tech/easy
 
     yarn test
 
-:construction: Tests are work in progress.
+or
+
+    yarn test:watch
 
 ### Commit
 
