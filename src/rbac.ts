@@ -56,7 +56,7 @@ export class RBAC<Params extends Record<string, any>, Role extends string> {
    *
    * @returns object with `{ can: boolean, filter?: Filter }`
    */
-  async can(role: Role | Role[], operation: string, params: Params): Promise<{ permission: boolean; filter?: Filter }> {
+  async can(role: Role | Role[], operation: string, params: Partial<Params> = {}): Promise<{ permission: boolean; filter?: Filter }> {
     if (Array.isArray(role)) {
       // multiple roles provided, test all
       const permissions = await Promise.all(role.map((role) => this.can(role, operation, params)))
@@ -190,11 +190,11 @@ export class RBAC<Params extends Record<string, any>, Role extends string> {
 export type Filter = Record<string, any>
 
 export interface ConditionEvaluator<Params extends Record<string, any>> {
-  (params: Params): Promise<boolean>
+  (params: Partial<Params>): Promise<boolean>
 }
 
 export interface QueryFilterGenerator<Params extends Record<string, any>> {
-  (params: Params): Promise<Filter | undefined>
+  (params: Partial<Params>): Promise<Filter | undefined>
 }
 
 export interface PermissionObject<Params extends Record<string, any>> {
