@@ -23,6 +23,8 @@ export class RBAC<Params extends Record<string, any>, Role extends string> {
    *
    * @prop {Roles}      roles - roles config object containing permissions
    * @prop {Options}    options - optional addiontal options
+   *
+   * @returns new RBAC-instance
    */
   constructor(roles: Roles<Params, Role>, options: Options<Params> = {}) {
     this.roles = new Map<Role, RoleMapItem<Params, Role>>()
@@ -54,7 +56,7 @@ export class RBAC<Params extends Record<string, any>, Role extends string> {
    * @prop {string} operation - operation to check
    * @prop {Params} params - needed to execute `when` and `filter` functions
    *
-   * @returns object with `{ can: boolean, filter?: Filter }`
+   * @returns object with `{ permission: boolean, filter?: Filter }`
    */
   async can(role: Role | Role[], operation: string, params: Partial<Params> = {}): Promise<{ permission: boolean; filter?: Filter }> {
     if (Array.isArray(role)) {
