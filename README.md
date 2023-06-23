@@ -97,6 +97,7 @@ There are two basic ways of configure permissions a role has.
    - the operation `name`
    - a optional async `when`-function returning a `boolean` to check permission based on context `params`. For example `userId` or document `ownerId`.
    - a optional async `filter`-function which computes and returns a filter `object` based on context `params`.
+   - a optional async `project`-function which computes and returns a project `object` based on context `params`.
 
 ```typescript
 const roles: Roles = {
@@ -110,6 +111,11 @@ const roles: Roles = {
           const { userId } = params
           paidArticles = await subscriptionService.getPaidArticles(userId)
           return { _id: { $in: allowedArticles } }
+        },
+        project: async (params) => {
+          const { userId } = params
+          // remove non-public fields for unknown users for example
+          return !userId ? { field1: false } : undefined
         },
       },
     ],
@@ -154,11 +160,13 @@ async function initialize() {
   return rbac
 }
 
-initialize().then((rbac) => {
-  // use the rbac instance
-}).catch((error) => {
-  // catch errors
-})
+initialize()
+  .then((rbac) => {
+    // use the rbac instance
+  })
+  .catch((error) => {
+    // catch errors
+  })
 ```
 
 Example with async factory function `() => Promise<Roles>`:
@@ -176,11 +184,13 @@ async function initialize() {
   return rbac
 }
 
-initialize().then((rbac) => {
-  // use the rbac instance
-}).catch((error) => {
-  // catch errors
-})
+initialize()
+  .then((rbac) => {
+    // use the rbac instance
+  })
+  .catch((error) => {
+    // catch errors
+  })
 ```
 
 The static async create function also works with a sync roles config object.
@@ -195,11 +205,13 @@ async function initialize() {
   return rbac
 }
 
-initialize().then((rbac) => {
-  // use the rbac instance
-}).catch((error) => {
-  // catch errors
-})
+initialize()
+  .then((rbac) => {
+    // use the rbac instance
+  })
+  .catch((error) => {
+    // catch errors
+  })
 ```
 
 #### Wildcards
@@ -242,8 +254,14 @@ const globalFilter = async ({ userTenantId, documentTenantId }) => {
   return undefined
 }
 
+// set projection to query only documents with the user's tenantId or no tenant id
+const globalProject = async ({ userTenantId, documentTenantId }) => {
+  if (userTenantId) return { field1: false, field2: false }
+  return undefined
+}
+
 // set global when and filter functions as options
-const rbac = new RBAC(roles, { globalWhen, globalFilter })
+const rbac = new RBAC(roles, { globalWhen, globalFilter, globalProject })
 ```
 
 If `when` or `filter` functions are set for a single operation (locally) **and** globally the following applies:
@@ -274,7 +292,7 @@ doSomething().catch((error) => {
 })
 ```
 
-The `can()` function returns also a `filter` object if a `filter` method is defined which apply for the role and operation. The `filter` object can be `undefined` if no `filter` method is defined or if it returns no `filter`.
+The `can()` function returns also a `filter` or `project` object if a `filter` or `project` method is defined which apply for the role and operation. The `filter` object can be `undefined` if no `filter` method is defined or if it returns no `filter`.
 
 ```typescript
 async function doSomething() {

@@ -58,7 +58,7 @@ export class RBAC<Params extends Record<string, any>, Role extends string> {
    *
    * @returns object with `{ permission: boolean, filter?: Filter }`
    */
-  async can(role: Role | Role[], operation: string, params: Partial<Params> = {}): Promise<{ permission: boolean; filter?: Filter }> {
+  async can(role: Role | Role[], operation: string, params: Partial<Params> = {}): Promise<{ permission: boolean; filter?: Filter, project?: Projection }> {
     if (Array.isArray(role)) {
       // multiple roles provided, test all
       const permissions = await Promise.all(role.map((role) => this.can(role, operation, params)))
@@ -103,8 +103,22 @@ export class RBAC<Params extends Record<string, any>, Role extends string> {
       const globalWhenPromise = typeof this.options.globalWhen === 'function' ? this.options.globalWhen(params) : Promise.resolve(true)
       const filterPromise = typeof operationCan.filter === 'function' ? operationCan.filter(params) : Promise.resolve(undefined)
       const globalFilterPromise = typeof this.options.globalFilter === 'function' ? this.options.globalFilter(params) : Promise.resolve(undefined)
-      const [permission, globalPermission, filter, globalFilter] = await Promise.all([whenPromise, globalWhenPromise, filterPromise, globalFilterPromise])
-      return { permission: permission && globalPermission, filter: globalFilter || filter ? { ...globalFilter, ...filter } : undefined }
+      const projectPromise = typeof operationCan.project === 'function' ? operationCan.project(params) : Promise.resolve(undefined)
+      const globalProjectPromise = typeof this.options.globalProject === 'function' ? this.options.globalProject(params) : Promise.resolve(undefined)
+
+      const [permission, globalPermission, filter, globalFilter, project, globalProject] = await Promise.all([
+        whenPromise,
+        globalWhenPromise,
+        filterPromise,
+        globalFilterPromise,
+        projectPromise,
+        globalProjectPromise,
+      ])
+      return {
+        permission: permission && globalPermission,
+        filter: globalFilter || filter ? { ...globalFilter, ...filter } : undefined,
+        project: globalProject || project ? { ...globalProject, ...project } : undefined,
+      }
     }
 
     // should never reached here
@@ -189,7 +203,11 @@ export class RBAC<Params extends Record<string, any>, Role extends string> {
 
 // types & interfaces
 
+/** allows to generate a filter object to select certain documents */
 export type Filter = Record<string, any>
+
+/** allows to remove or add fields from db document */
+export type Projection = Record<string, boolean>
 
 export interface ConditionEvaluator<Params extends Record<string, any>> {
   (params: Partial<Params>): Promise<boolean>
@@ -199,10 +217,15 @@ export interface QueryFilterGenerator<Params extends Record<string, any>> {
   (params: Partial<Params>): Promise<Filter | undefined>
 }
 
+export interface ProjectionGenerator<Params extends Record<string, any>> {
+  (params: Partial<Params>): Promise<Projection | undefined>
+}
+
 export interface PermissionObject<Params extends Record<string, any>> {
   name: string
   when?: ConditionEvaluator<Params>
   filter?: QueryFilterGenerator<Params>
+  project?: ProjectionGenerator<Params>
 }
 
 export type Roles<Params extends Record<string, any> = Record<string, any>, Role extends string = string> = {
@@ -228,4 +251,6 @@ interface Options<Params extends Record<string, any>> {
   globalWhen?: ConditionEvaluator<Params>
   /** set `globalFilter`-generator which is always executed and merged with the filter of a permission */
   globalFilter?: QueryFilterGenerator<Params>
+  /** set `globalProject`-generator which is alway executed and merged with the project of a permisison */
+  globalProject?: ProjectionGenerator<Params>
 }
