@@ -170,14 +170,15 @@ export class RBAC<Params extends Record<string, any>, Role extends string> {
 
         // if conditional permission with filter
         if (typeof permission === 'object') {
-          const { name, filter, when } = permission
+          const { name, filter, when, project } = permission
           if (!name || typeof name !== 'string') throw new TypeError('name is missing on permission object')
-          if (when && typeof when !== 'function') TypeError('when type is not a function')
-          if (filter && typeof filter !== 'function') TypeError('filter type is not a function')
+          if (when && typeof when !== 'function') throw new TypeError('when type is not a function')
+          if (filter && typeof filter !== 'function') throw new TypeError('filter type is not a function')
+          if (project && typeof project !== 'function') throw new TypeError('project is not a function')
           if (hasWildcard(name)) {
-            roleMapItem.canWildcards.push({ wildcard: wildcardRegex(name), filter, when, name })
+            roleMapItem.canWildcards.push({ wildcard: wildcardRegex(name), filter, project, when, name })
           } else {
-            roleMapItem.can[name] = { when, filter }
+            roleMapItem.can[name] = { when, filter, project }
           }
           return
         }
