@@ -284,6 +284,10 @@ describe('with multiple roles rbac should', () => {
             return { documents: { $in: ['viewable'] } }
           },
         },
+        {
+          name: 'readpart',
+          project: async () => ({ name: true }),
+        },
       ],
     },
     commenter: {
@@ -295,6 +299,10 @@ describe('with multiple roles rbac should', () => {
             return { documents: { $in: ['viewable', 'commentable'] } }
           },
         },
+        {
+          name: 'readpart',
+          project: async () => ({ name: true, description: true }),
+        },
       ],
     },
     editor: {
@@ -302,7 +310,11 @@ describe('with multiple roles rbac should', () => {
     },
   }
 
-  const rbac = new RBAC(roles)
+  const rbac = new RBAC(roles, {
+    mergeFilters: (filters) => ({
+      $or: filters,
+    }),
+  })
 
   test('allow operation if one role has permission', async () => {
     await expect(rbac.can(['viewer', 'commenter', 'editor'], 'edit')).resolves.toEqual({ permission: true })
@@ -320,7 +332,17 @@ describe('with multiple roles rbac should', () => {
     await expect(rbac.can(['commenter'], 'list')).resolves.toEqual({ permission: true, filter: { documents: { $in: ['viewable', 'commentable'] } } })
   })
 
-  test('throw error if multiple roles have filter generators', async () => {
-    await expect(rbac.can(['viewer', 'commenter'], 'list')).rejects.toThrow('Role definition conflict: Multiple permissions with filters apply.')
+  test('merge filter if multiple roles have filter generators and mergeFilter exists', async () => {
+    await expect(rbac.can(['viewer', 'commenter'], 'list')).resolves.toEqual({
+      permission: true,
+      filter: { $or: [{ documents: { $in: ['viewable'] } }, { documents: { $in: ['viewable', 'commentable'] } }] },
+      project: undefined,
+    })
+  })
+
+  test('throw error multiple roles have project generators and mergeProjection is missing', async () => {
+    await expect(rbac.can(['viewer', 'commenter'], 'readpart')).rejects.toThrow(
+      'Multiple roles with multiple project apply. Define mergeProject() function in RBAC options.'
+    )
   })
 })
