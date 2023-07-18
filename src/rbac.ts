@@ -63,26 +63,27 @@ export class RBAC<Params extends Record<string, any>, Role extends string> {
       // multiple roles provided, test all
       const permissions = await Promise.all(role.map((role) => this.can(role, operation, params)))
 
-      // TODO: implement permission selection progress including project
+      const allowed = permissions.filter(({ permission }) => !!permission)
 
-      // return permission with no filters if existing
-      const filterlessPermission = permissions.find(({ permission, filter }) => permission && !filter)
-      if (filterlessPermission) return filterlessPermission
+      if (allowed.length < 1) return { permission: false }
 
-      const filterPermissions = permissions.filter(({ permission, filter }) => permission && filter)
-      // if no permission with filter deny
-      if (filterPermissions.length < 1) return { permission: false }
-      // if one permission with filters return that one
-      if (filterPermissions.length === 1) {
-        const [filterPermission] = filterPermissions
-        return filterPermission
-      }
+      // return permission with no filters and no project if existing
+      const unrestrictedPermission = allowed.find(({ filter, project }) => !filter && !project)
+      if (unrestrictedPermission) return unrestrictedPermission
 
-      if (filterPermissions.length > 1 && this.options.mergeFilters) {
-        return { permission: true, filter: this.options.mergeFilters(filterPermissions.map(({ filter }) => filter)) }
-      }
-      // if more than one permission with filters
-      throw new TypeError('Role definition conflict: Multiple permissions with filters apply. Define mergeFilters() funciton in options.')
+      const filters = allowed.filter(({ filter }) => !!filter).map(({ filter }) => filter)
+      const projects = allowed.filter(({ project }) => !!project).map(({ project }) => project)
+
+      const mergeFilters = this.options.mergeFilters
+      const mergeProjections = this.options.mergeProjections
+
+      if (filters.length && !mergeFilters) throw new Error('Multiple roles with multiple filter apply. Define mergeFilters() function in RBAC options.')
+      if (projects.length && !mergeProjections) throw new Error('Multiple roles with multiple project apply. Define mergeProject() function in RBAC options.')
+
+      const filter = filters.length > 1 ? mergeFilters?.(filters, operation) : filters[0]
+      const project = projects.length > 1 ? mergeProjections?.(projects, operation) : projects[0]
+
+      return { permission: true, filter, project }
     }
 
     if (typeof role !== 'string') return { permission: false }
@@ -261,8 +262,7 @@ interface Options<Params extends Record<string, any>> {
   /** set `globalProject`-generator which is alway executed and merged with the project of a permisison */
   globalProject?: ProjectionGenerator<Params>
   /** how to merge filters if multiple apply */
-  mergeFilters?: (filters: (Filter | undefined)[]) => Filter | undefined
+  mergeFilters?: (filters: (Filter | undefined)[], operation: string) => Filter | undefined
   /** how to merge filters if multiple apply */
-  // TODO: uncomment and implement
-  // mergeProjections?: (filters: (Projection | undefined)[]) => Projection | undefined
+  mergeProjections?: (filters: (Projection | undefined)[], operation: string) => Projection | undefined
 }
