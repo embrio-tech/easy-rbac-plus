@@ -58,10 +58,12 @@ export class RBAC<Params extends Record<string, any>, Role extends string> {
    *
    * @returns object with `{ permission: boolean, filter?: Filter }`
    */
-  async can(role: Role | Role[], operation: string, params: Partial<Params> = {}): Promise<{ permission: boolean; filter?: Filter, project?: Projection }> {
+  async can(role: Role | Role[], operation: string, params: Partial<Params> = {}): Promise<{ permission: boolean; filter?: Filter; project?: Projection }> {
     if (Array.isArray(role)) {
       // multiple roles provided, test all
       const permissions = await Promise.all(role.map((role) => this.can(role, operation, params)))
+
+      // TODO: implement permission selection progress including project
 
       // return permission with no filters if existing
       const filterlessPermission = permissions.find(({ permission, filter }) => permission && !filter)
@@ -75,8 +77,12 @@ export class RBAC<Params extends Record<string, any>, Role extends string> {
         const [filterPermission] = filterPermissions
         return filterPermission
       }
+
+      if (filterPermissions.length > 1 && this.options.mergeFilters) {
+        return { permission: true, filter: this.options.mergeFilters(filterPermissions.map(({ filter }) => filter)) }
+      }
       // if more than one permission with filters
-      throw new TypeError('Role definition conflict: Multiple permissions with filters apply.')
+      throw new TypeError('Role definition conflict: Multiple permissions with filters apply. Define mergeFilters() funciton in options.')
     }
 
     if (typeof role !== 'string') return { permission: false }
@@ -254,4 +260,9 @@ interface Options<Params extends Record<string, any>> {
   globalFilter?: QueryFilterGenerator<Params>
   /** set `globalProject`-generator which is alway executed and merged with the project of a permisison */
   globalProject?: ProjectionGenerator<Params>
+  /** how to merge filters if multiple apply */
+  mergeFilters?: (filters: (Filter | undefined)[]) => Filter | undefined
+  /** how to merge filters if multiple apply */
+  // TODO: uncomment and implement
+  // mergeProjections?: (filters: (Projection | undefined)[]) => Projection | undefined
 }
