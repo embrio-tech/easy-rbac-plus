@@ -215,7 +215,7 @@ export class RBAC<Params extends Record<string, any>, Role extends string> {
 export type Filter = Record<string, any>
 
 /** allows to remove or add fields from db document */
-export type Projection = Record<string, boolean>
+export type Projection = Record<string, boolean | 1 | 0>
 
 export interface ConditionEvaluator<Params extends Record<string, any>> {
   (params: Partial<Params>): Promise<boolean>
