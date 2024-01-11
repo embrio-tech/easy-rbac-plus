@@ -77,11 +77,15 @@ export class RBAC<Params extends Record<string, any>, Role extends string> {
       const mergeFilters = this.options.mergeFilters
       const mergeProjections = this.options.mergeProjections
 
-      if (filters.length && !mergeFilters) throw new Error('Multiple roles with multiple filter apply. Define mergeFilters() function in RBAC options.')
-      if (projects.length && !mergeProjections) throw new Error('Multiple roles with multiple project apply. Define mergeProject() function in RBAC options.')
+      if (filters.length > 1 && !mergeFilters) {
+        throw new Error('Multiple roles with multiple filter apply. Define mergeFilters() function in RBAC options.')
+      }
+      if (projects.length > 1 && !mergeProjections) {
+        throw new Error('Multiple roles with multiple project apply. Define mergeProject() function in RBAC options.')
+      }
 
-      const filter = filters.length > 1 ? mergeFilters?.(filters, operation) : filters[0]
-      const project = projects.length > 1 ? mergeProjections?.(projects, operation) : projects[0]
+      const filter = filters.length > 1 ? mergeFilters?.(filters, operation, 'roles') : filters[0]
+      const project = projects.length > 1 ? mergeProjections?.(projects, operation, 'roles') : projects[0]
 
       return { permission: true, filter, project }
     }
@@ -121,10 +125,25 @@ export class RBAC<Params extends Record<string, any>, Role extends string> {
         projectPromise,
         globalProjectPromise,
       ])
+
+      const filters = [filter, globalFilter].filter((item) => !!item)
+      const projects = [project, globalProject].filter((item) => !!item)
+
+      const mergeFilters = this.options.mergeFilters
+      const mergeProjections = this.options.mergeProjections
+
+      if (filters.length > 1 && !mergeFilters) {
+        throw new Error('A global and operation filter apply. Define mergeFilters() function in RBAC options.')
+      }
+      if (projects.length > 1 && !mergeProjections) {
+        throw new Error('A global and operation project apply. Define mergeProject() function in RBAC options.')
+      }
       return {
         permission: permission && globalPermission,
-        filter: globalFilter || filter ? { ...globalFilter, ...filter } : undefined,
-        project: globalProject || project ? { ...globalProject, ...project } : undefined,
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        filter: filters.length ? (filters.length === 1 ? filters[0] : mergeFilters!(filters, operation, 'global')) : undefined,
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        project: projects.length ? (projects.length === 1 ? projects[0] : mergeProjections!(projects, operation, 'global')) : undefined,
       }
     }
 
@@ -257,12 +276,32 @@ interface RoleMapItem<Params extends Record<string, any>, Role extends string> {
 interface Options<Params extends Record<string, any>> {
   /** set `globalWhen` which is always executed and must return true to grant permisison */
   globalWhen?: ConditionEvaluator<Params>
+
   /** set `globalFilter`-generator which is always executed and merged with the filter of a permission */
   globalFilter?: QueryFilterGenerator<Params>
+
   /** set `globalProject`-generator which is alway executed and merged with the project of a permisison */
   globalProject?: ProjectionGenerator<Params>
-  /** how to merge filters if multiple apply */
-  mergeFilters?: (filters: (Filter | undefined)[], operation: string) => Filter | undefined
-  /** how to merge filters if multiple apply */
-  mergeProjections?: (filters: (Projection | undefined)[], operation: string) => Projection | undefined
+
+  /**
+   * how to merge filters if multiple apply. `mergeFilters()` is only executed if more than one filter applies.
+   *
+   * @param {Filter[]} filters - a list of filters (min length is 2)
+   * @param {string} operation - the operation name. It allows to apply different merge rules depending on the operation.
+   * @param {'global' | 'roles'} type - merge is executed when either multiple roles apply (type `'roles'`)
+   * or global and operation filter are defined (type `'global'`). Use `type` to implement different merge rules
+   * for these two scenarios.
+   */
+  mergeFilters?: (filters: (Filter | undefined)[], operation: string, type: 'global' | 'roles') => Filter | undefined
+
+  /**
+   * how to merge projections if multiple apply. `mergeProjectios()` is only executed if more than one project applies.
+   *
+   * @param {Projection[]} projects - a list of projects (min length is 2)
+   * @param {string} operation - the operation name. It allows to apply different merge rules depending on the operation.
+   * @param {'global' | 'roles'} type - merge is executed when either multiple roles apply (type `'roles'`)
+   * or global and operation projection are defined (type `'global'`). Use `type` to implement different merge rules
+   * for these two scenarios.
+   */
+  mergeProjections?: (projects: (Projection | undefined)[], operation: string, type: 'global' | 'roles') => Projection | undefined
 }

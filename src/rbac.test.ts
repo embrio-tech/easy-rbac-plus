@@ -226,6 +226,7 @@ describe('with global when conditions and global filters rbac should', () => {
       }
       return undefined
     },
+    mergeFilters: (filters) => filters.reduce((prev, current) => ({ ...prev, ...current }), {}),
   })
 
   test('not check permissions without required params.', async () => {
@@ -269,6 +270,31 @@ describe('with global when conditions and global filters rbac should', () => {
         premium: { $in: [null, false] },
       },
     })
+  })
+
+  test('throw an error if global and operation filter apply but mergeFilters() is undefined.', async () => {
+    const rbac = new RBAC(roles, {
+      globalWhen: async ({ articleMagazine, userMagazines }) => {
+        if (!articleMagazine) throw new Error('Required params missing!')
+        return (userMagazines || []).includes(articleMagazine)
+      },
+      globalFilter: async ({ articleMagazine, userMagazines, requireGlobalFilter }) => {
+        if (requireGlobalFilter) {
+          if (!articleMagazine) throw new Error('Required params missing!')
+          return { magazine: { $in: userMagazines || [] } }
+        }
+        return undefined
+      },
+    })
+
+    await expect(
+      rbac.can('reader', 'article:list', {
+        userHasSubscription: false,
+        articleMagazine: 'new yorker',
+        userMagazines: ['nzz folio', 'new yorker'],
+        requireGlobalFilter: true,
+      })
+    ).rejects.toThrow('A global and operation filter apply. Define mergeFilters() function in RBAC options.')
   })
 })
 
