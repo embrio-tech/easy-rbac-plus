@@ -21,7 +21,7 @@ When doing access control for requests on multiple documents–—for example GE
 
 ### Prerequisites
 
-- Node >= v14.x is required
+- Node >= v16.x is required
 
 ### Install
 
