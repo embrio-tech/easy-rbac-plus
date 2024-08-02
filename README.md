@@ -1,5 +1,7 @@
 # `@embrio-tech/easy-rbac-plus`
 
+### :no_entry: DEPRECATED – Use [`@policer-io/pdp-ts`](https://www.npmjs.com/package/@policer-io/pdp-ts) instead
+
 Extended HRBAC (Hierarchical Role Based Access Control) implementation for Node.js inspired by and based on [easy-rbac](https://github.com/DeadAlready/easy-rbac) by [DeadAlready](https://github.com/DeadAlready)
 
 [![embrio.tech](https://img.shields.io/static/v1?label=by&message=EMBRIO.tech&color=24ae5f)](https://embrio.tech)
